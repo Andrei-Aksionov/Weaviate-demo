@@ -128,8 +128,14 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# data
+# Dataset
 /data
+/dataset
 
-# models
+# Models
+/model
 /models
+
+# VSCODE
+.vscode
+.DS_STORE
