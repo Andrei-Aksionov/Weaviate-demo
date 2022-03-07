@@ -14,7 +14,12 @@
           "name": "summary",
           "dataType": ["text"],
           "description": "The summary of the article"
-          }
+        },
+        {
+          "name": "hasAuthors",
+          "dataType": ["Author"],
+          "description": "The authors this article has"
+        }
       ]
     },
     {

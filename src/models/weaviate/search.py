@@ -35,10 +35,18 @@ def search_sbert(
     query: str, client: weaviate.Client, model: sentence_transformers.SentenceTransformer, limit: int = 1
 ) -> str:
 
-    near_vector = {"vector": model.encode(query)}
+    near_vector = {
+        "vector": model.encode(query),
+        "certainty": 0.6,
+    }
+    near_text = {
+        "moveAwayFrom": {"concepts": ["Beijing"], "force": 0.45},
+    }
+
     response = (
         client.query.get("Article", ["title", "_additional {certainty}"])
         .with_near_vector(near_vector)
+        .with_near_text(near_text)
         .with_limit(limit)
         .do()
     )

@@ -1,6 +1,5 @@
 import json
 import pickle
-from cgitb import enable
 
 import weaviate
 from tqdm import tqdm, trange
@@ -15,14 +14,14 @@ def add_article(batch: Batch, article_data: dict) -> str:
         "summary": article_data["summary"].replace("\n", " "),
     }
     article_id = article_data["id"]
-    title_vector = article_data["title_vector"]
+    # title_vector = article_data["title_vector"]
 
     # adding article to the batch
     batch.add_data_object(
         data_object=article_object,
         class_name="Article",
         uuid=article_id,
-        vector=title_vector,
+        # vector=title_vector,
     )
 
     return article_id
@@ -77,11 +76,11 @@ def load_data(client: weaviate.Client):
 
     created_authors = {}
 
-    # with open("data/raw/newspaper_news.pkl", "rb") as fin:
-    #     data = pickle.load(fin)
-
-    with open("data/interim/news_title_vectors.pkl", "rb") as fin:
+    with open("data/raw/newspaper_news.pkl", "rb") as fin:
         data = pickle.load(fin)
+
+    # with open("data/interim/news_title_vectors.pkl", "rb") as fin:
+    #     data = pickle.load(fin)
 
     with client.batch as batch:
         for data_object in tqdm(data, disable=False):
@@ -94,30 +93,30 @@ def load_data(client: weaviate.Client):
                 add_references(batch, article_id, author_id)
 
 
-def load_data_manual(client: weaviate.Client) -> None:
+# def load_data_manual(client: weaviate.Client) -> None:
 
-    created_authors = {}
+#     created_authors = {}
 
-    with open("data/raw/newspaper_news.pkl", "rb") as fin:
-        data = pickle.load(fin)
+#     with open("data/raw/newspaper_news.pkl", "rb") as fin:
+#         data = pickle.load(fin)
 
-    with client.batch as batch:
-        for idx, data_object in enumerate(tqdm(data)):
+#     with client.batch as batch:
+#         for idx, data_object in enumerate(tqdm(data)):
 
-            article_id = add_article(batch, data_object)
+#             article_id = add_article(batch, data_object)
 
-            for author in data_object["authors"]:
-                author_id = add_author(batch, author, created_authors)
+#             for author in data_object["authors"]:
+#                 author_id = add_author(batch, author, created_authors)
 
-                add_references(batch, article_id, author_id)
+#                 add_references(batch, article_id, author_id)
 
-        if idx % 20 == 0:
-            batch.create_objects()
-            batch.create_references()
+#         if idx % 20 == 0:
+#             batch.create_objects()
+#             batch.create_references()
 
 
 def load_schema(client: weaviate.Client) -> None:
-    with open("src/models/weaviate/schema.json", "r") as fin:
+    with open("src/models/weaviate/schema_vectorizer.json", "r") as fin:
         schema = json.load(fin)
 
     client.schema.delete_all()
@@ -144,7 +143,7 @@ def main():
         dynamic=True,
     )
 
-    erase(client)
+    # erase(client)
 
     load_schema(client)
     load_data(client)
