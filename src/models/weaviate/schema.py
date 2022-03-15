@@ -1,21 +1,88 @@
-def init_weaviate_schema(client):
-    # a simple schema containing just a single class for our posts
-    schema = {
-        "classes": [
-            {
-                "class": "Post",
-                "vectorizer": "text2vec-transformers",  # explicitly tell Weaviate not to vectorize anything, we are providing the vectors ourselves through our BERT model
-                "properties": [
-                    {
-                        "name": "content",
-                        "dataType": ["text"],
-                    }
-                ],
-            }
-        ]
+# fmt: off
+schema = {
+  "classes": [
+    {
+      "class": "Article",
+      "description": "An Article class to store the article summary and its authors",
+      "vectorizer": "text2vec-transformers",
+      "properties": [
+        {
+          "name": "title",
+          "dataType": ["text"],
+          "description": "The title of the article"
+        },
+        {
+          "name": "url",
+          "dataType": ["string"],
+          "description": "Url of the article",
+          "moduleConfig": {
+            "text2vec-transformers": {
+              "skip": True, # if true, the whole property will NOT be included in vectorization. default is false, meaning that the object will be NOT be skipped
+            },
+          },
+        },
+        {
+          "name": "published_at",
+          "dataType": ["date"],
+          "description": "Date of publication"
+        },
+        {
+          "name": "short_description",
+          "dataType": ["text"],
+          "description": "Short description of the article",
+          "moduleConfig": {
+            "text2vec-transformers": {
+              "skip": True,
+            },
+          },
+        },
+        {
+          "name": "description",
+          "dataType": ["text"],
+          "description": "Description of the article"
+        },
+        {
+          "name": "keywords",
+          "dataType": ["string[]"],
+          "description": "Keywords of the article",
+          "moduleConfig": {
+            "text2vec-transformers": {
+              "skip": True,
+            },
+          },
+        },
+        {
+          "name": "descriptionWordCount",
+          "dataType": ["int"],
+          "description": "Number of words in description",
+        },
+        {
+          "name": "hasAuthors",
+          "dataType": ["Author"],
+          "description": "The authors this article has"
+        }
+      ]
+    },
+    {
+      "class": "Author",
+      "description": "An Author class to store the author information",
+      "properties": [
+        {
+          "name": "name",
+          "dataType": ["string"],
+          "description": "The name of the author",
+          "moduleConfig": {
+            "text2vec-transformers": {
+              "skip": True,
+            },
+          },
+        },
+        {
+          "name": "wroteArticles",
+          "dataType": ["Article"],
+          "description": "The articles of the author"
+          }
+      ]
     }
-
-    # cleanup from previous runs
-    client.schema.delete_all()
-    client.schema.create(schema)
-    print("Schema initiated")
+  ]
+}

@@ -69,12 +69,12 @@ def main():
     #     .do()
     # )
     nearText = {
-        "concepts": ["airport landing"],
+        "concepts": ["financial crisis"],
         "certainty": 0.5,
         # "moveAwayFrom": {"concepts": ["britain"], "force": 0.8},
         # "moveTo": {"concepts": ["new york"], "force": 0.85},
     }
-    field = "title"
+    field = "description title"
     response = (
         client.query.get("Article", [field, "_additional {certainty} "]).with_near_text(nearText).with_limit(5).do()
     )
@@ -85,7 +85,7 @@ def main():
 
     # query_text = "sport"
     # response = search_sbert(query_text, client, model, 5)
-    response = prettify_response(response, field)
+    response = prettify_response(response, "title")
     print(response)
 
 

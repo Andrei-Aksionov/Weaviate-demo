@@ -129,11 +129,10 @@ dmypy.json
 .pyre/
 
 # Dataset
-/data
-/dataset
+/data/*
+!/data/raw/
 
 # Models
-/model
 /models
 
 # VSCODE

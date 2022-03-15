@@ -3,16 +3,37 @@
     {
       "class": "Article",
       "description": "An Article class to store the article summary and its authors",
+      "vectorizer": "text2vec-transformers",
       "properties": [
         {
           "name": "title",
-          "dataType": ["string"],
+          "dataType": ["text"],
           "description": "The title of the article"
         },
         {
-          "name": "summary",
+          "name": "url",
+          "dataType": ["string"],
+          "description": "Url of the article"
+        },
+        {
+          "name": "published_at",
+          "dataType": ["date"],
+          "description": "Date of publication"
+        },
+        {
+          "name": "short_description",
           "dataType": ["text"],
-          "description": "The summary of the article"
+          "description": "Short description of the article"
+        },
+        {
+          "name": "description",
+          "dataType": ["text"],
+          "description": "Description of the article"
+        },
+        {
+          "name": "keywords",
+          "dataType": ["text[]"],
+          "description": "Keywords of the article"
         },
         {
           "name": "hasAuthors",

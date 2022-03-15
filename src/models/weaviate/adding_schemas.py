@@ -2,7 +2,7 @@ import json
 
 import weaviate
 
-from src.models.weaviate.schemas import (
+from src.models.weaviate.schema import (
     article_class_schema,
     author_class_schema,
     combined_class_schema,

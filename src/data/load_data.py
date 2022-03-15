@@ -1,131 +1,107 @@
-import json
-import pickle
-
+import pandas as pd
 import weaviate
 from tqdm import tqdm, trange
 from weaviate.batch import Batch
 from weaviate.util import generate_uuid5
 
-
-def add_article(batch: Batch, article_data: dict) -> str:
-
-    article_object = {
-        "title": article_data["title"],
-        "summary": article_data["summary"].replace("\n", " "),
-    }
-    article_id = article_data["id"]
-    # title_vector = article_data["title_vector"]
-
-    # adding article to the batch
-    batch.add_data_object(
-        data_object=article_object,
-        class_name="Article",
-        uuid=article_id,
-        # vector=title_vector,
-    )
-
-    return article_id
+from src.models.weaviate import schema
+from src.utils.config import config
 
 
-def add_author(batch: Batch, author_name: str, created_authors: dict) -> str:
-
-    if author_name in created_authors:
-        # return author uuid
-        return created_authors[author_name]
-
-    # generate UUID for the author
-    author_id = generate_uuid5(author_name)
-    author_object = {
-        "name": author_name,
-    }
-
-    # add author to the batch
-    batch.add_data_object(
-        data_object=author_object,
-        class_name="Author",
-        uuid=author_id,
-    )
-
-    created_authors[author_name] = author_id
-
-    return author_id
+def split_string(text: str, delimeter: str = ",") -> list[str]:
+    return [kw.strip() for kw in text.split(delimeter)]
 
 
-def add_references(batch: Batch, article_id: str, author_id: str) -> None:
+class DataLoader:
+    def __init__(self) -> None:
+        self.authors: dict[str, str] = {}
 
-    # add references to the batch
+    def add_author(self, batch: Batch, author_name: str) -> str:
 
-    # author -> article
-    batch.add_reference(
-        from_object_uuid=author_id,
-        from_object_class_name="Author",
-        from_property_name="wroteArticles",
-        to_object_uuid=article_id,
-    )
+        if author_id := self.authors.get(author_name):
+            return author_id
 
-    # article -> author
-    batch.add_reference(
-        from_object_uuid=article_id,
-        from_object_class_name="Article",
-        from_property_name="hasAuthors",
-        to_object_uuid=author_id,
-    )
+        # generate UUID for the author
+        author_id = generate_uuid5(author_name)
+        author_object = {"name": author_name}
+
+        # add author to the batch
+        batch.add_data_object(
+            data_object=author_object,
+            class_name="Author",
+            uuid=author_id,
+        )
+
+        self.authors[author_name] = author_id
+
+        return author_id
+
+    def add_article(self, batch: Batch, article_data: pd.Series) -> str:
+
+        keywords = split_string(article_data.keywords)
+
+        description_word_count = article_data.description.count(" ") + 1
+        article_object = {
+            "title": article_data.title,
+            "url": article_data.url,
+            "published_at": article_data.published_at,
+            "short_description": article_data.short_description,
+            "description": article_data.description,
+            "keywords": keywords,
+            "descriptionWordCount": description_word_count,
+        }
+
+        article_id = generate_uuid5(article_data.url)
+        # adding article to the batch
+        batch.add_data_object(
+            data_object=article_object,
+            class_name="Article",
+            uuid=article_id,
+        )
+
+        return article_id
+
+    def add_references(self, batch: Batch, article_id: str, author_id: str) -> None:
+
+        # add references to the batch
+
+        # author -> article
+        batch.add_reference(
+            from_object_uuid=author_id,
+            from_object_class_name="Author",
+            from_property_name="wroteArticles",
+            to_object_uuid=article_id,
+        )
+
+        # article -> author
+        batch.add_reference(
+            from_object_uuid=article_id,
+            from_object_class_name="Article",
+            from_property_name="hasAuthors",
+            to_object_uuid=author_id,
+        )
 
 
-def load_data(client: weaviate.Client):
+def load_data(client: weaviate.Client, data: pd.DataFrame) -> None:
 
-    created_authors = {}
-
-    with open("data/raw/newspaper_news.pkl", "rb") as fin:
-        data = pickle.load(fin)
-
-    # with open("data/interim/news_title_vectors.pkl", "rb") as fin:
-    #     data = pickle.load(fin)
+    data_loader = DataLoader()
 
     with client.batch as batch:
-        for data_object in tqdm(data, disable=False):
+        for data_object in tqdm(data.itertuples(), total=len(data)):
 
-            article_id = add_article(batch, data_object)
+            article_id = data_loader.add_article(batch, data_object)
 
-            for author in data_object["authors"]:
-                author_id = add_author(batch, author, created_authors)
+            authors = split_string(data_object.author)
+            for author in authors:
+                author_id = data_loader.add_author(batch, author)
 
-                add_references(batch, article_id, author_id)
-
-
-# def load_data_manual(client: weaviate.Client) -> None:
-
-#     created_authors = {}
-
-#     with open("data/raw/newspaper_news.pkl", "rb") as fin:
-#         data = pickle.load(fin)
-
-#     with client.batch as batch:
-#         for idx, data_object in enumerate(tqdm(data)):
-
-#             article_id = add_article(batch, data_object)
-
-#             for author in data_object["authors"]:
-#                 author_id = add_author(batch, author, created_authors)
-
-#                 add_references(batch, article_id, author_id)
-
-#         if idx % 20 == 0:
-#             batch.create_objects()
-#             batch.create_references()
+                data_loader.add_references(batch, article_id, author_id)
 
 
 def load_schema(client: weaviate.Client) -> None:
-    with open("src/models/weaviate/schema_vectorizer.json", "r") as fin:
-        schema = json.load(fin)
 
     client.schema.delete_all()
-    client.schema.create(schema)
-
-    # from src.models.weaviate.schemas import combined_class_schema
-
-    # client.schema.delete_all()
-    # client.schema.create(combined_class_schema)
+    client.schema.create(schema.schema)
 
 
 def erase(client: weaviate.Client) -> None:
@@ -143,10 +119,10 @@ def main():
         dynamic=True,
     )
 
-    # erase(client)
+    data = pd.read_csv(config.data.interim)
 
     load_schema(client)
-    load_data(client)
+    load_data(client, data)
     articles_count = client.query.aggregate(class_name="Article").with_meta_count().do()
     authors_count = client.query.aggregate(class_name="Author").with_meta_count().do()
     print(f"Articles: {articles_count}, Authors: {authors_count}")
