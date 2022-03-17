@@ -120,6 +120,7 @@ def main():
     )
 
     data = pd.read_csv(config.data.interim)
+    # data = data.iloc[:50]
 
     load_schema(client)
     load_data(client, data)

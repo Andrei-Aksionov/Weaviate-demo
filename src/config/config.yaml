@@ -1,0 +1,3 @@
+data:
+  raw: data/raw/cnbc_news_dataset.csv
+  interim: data/interim/cnbc_news_dataset.csv

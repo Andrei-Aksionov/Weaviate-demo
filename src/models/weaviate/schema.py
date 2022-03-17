@@ -3,7 +3,7 @@ schema = {
   "classes": [
     {
       "class": "Article",
-      "description": "An Article class to store the article summary and its authors",
+      "description": "An Article class to store the article summary and it's authors",
       "vectorizer": "text2vec-transformers",
       "properties": [
         {
@@ -43,7 +43,7 @@ schema = {
         },
         {
           "name": "keywords",
-          "dataType": ["string[]"],
+          "dataType": ["text[]"],
           "description": "Keywords of the article",
           "moduleConfig": {
             "text2vec-transformers": {
