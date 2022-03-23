@@ -35,6 +35,8 @@ pytest = "~7.0.1"
 termcolor = "~1.1.0"
 matplotlib = "^3.5.1"
 seaborn = "^0.11.2"
+lxml = "^4.8.0"
+python-Levenshtein = "^0.12.2"
 
 [tool.isort]
 ensure_newline_before_comments = true
