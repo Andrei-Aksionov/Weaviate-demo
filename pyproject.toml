@@ -18,6 +18,7 @@ tqdm = "~4.62.3"
 weaviate-client = "~3.3.0"
 
 [tool.poetry.dev-dependencies]
+bertopic = "~0.9.4"
 black = "*"
 flake8 = "*"
 flake8-absolute-import = "*"
@@ -31,11 +32,13 @@ flake8-isort = "*"
 flake8-print = "*"
 flake8-pytest-style = "*"
 ipykernel = "~6.9.1"
+matplotlib = "~3.5.1"
 pytest = "~7.0.1"
+python-Levenshtein = "~0.12.2"
+scikit-learn = "~1.0.2"
+seaborn = "~0.11.2"
 termcolor = "~1.1.0"
-matplotlib = "^3.5.1"
-seaborn = "^0.11.2"
-python-Levenshtein = "^0.12.2"
+torch = "1.10.2"
 
 [tool.isort]
 ensure_newline_before_comments = true

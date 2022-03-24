@@ -1,3 +1,10 @@
 data:
   raw: data/raw/cnbc_news_dataset.csv
   interim: data/interim/cnbc_news_dataset.csv
+
+eda:
+  topic_modeling:
+    umap:
+      random_state: 42
+    bertopic:
+      embedding_model: "all-MiniLM-L6-v2"
