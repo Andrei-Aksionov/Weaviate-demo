@@ -8,3 +8,9 @@ eda:
       random_state: 42
     bertopic:
       embedding_model: "all-MiniLM-L6-v2"
+
+preprocessing:
+  author:
+    fillna_value: Unknown
+  spacy:
+    model: en_core_web_sm
