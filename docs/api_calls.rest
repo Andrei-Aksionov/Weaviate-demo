@@ -17,7 +17,7 @@ GET {{host}}:{{port}}/v1/meta
 
 
 ###
-# Example request (more examples are in notebooks/3.weavaite_search_examples.ipynb)
+# Example request (more examples are in notebooks/3.weaviate_search_examples.ipynb)
 POST {{host}}:{{port}}/v1/graphql HTTP/1.1
 Content-Type: application/json
 x-request-type: GraphQL

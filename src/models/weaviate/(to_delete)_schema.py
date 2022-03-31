@@ -1,4 +1,7 @@
+# TODO: Tasks pending completion -@andreiaksionov at 3/28/2022, 2:52:40 PM
+# Decide either to use .py (with comments) or .json file (without comments)
 # fmt: off
+# flake8: noqa
 schema = {
   "classes": [
     {
@@ -78,7 +81,7 @@ schema = {
           },
         },
         {
-          "name": "wroteArticles",
+          "name": "hasArticles",
           "dataType": ["Article"],
           "description": "The articles of the author"
           }

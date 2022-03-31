@@ -39,6 +39,7 @@ scikit-learn = "~1.0.2"
 seaborn = "~0.11.2"
 termcolor = "~1.1.0"
 torch = "1.10.2"
+flake8-docstrings = "^1.6.0"
 
 [tool.isort]
 ensure_newline_before_comments = true

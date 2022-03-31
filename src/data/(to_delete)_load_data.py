@@ -1,3 +1,6 @@
+# TODO: Tasks pending completion -@andreiaksionov at 3/28/2022, 5:25:12 PM
+# put this as a pseudo-code in .md description
+
 import pandas as pd
 import weaviate
 from tqdm import tqdm
@@ -106,7 +109,7 @@ def load_schema(client: weaviate.Client) -> None:
     client.schema.create(schema.schema)
 
 
-def main():
+def main() -> None:
     # instantiate connection with Weaviate
     client = weaviate.Client("http://localhost:8080")
     # configure the size of batch
@@ -120,8 +123,8 @@ def main():
     )
 
     # reading data that will be pushed to Weaviate
-    data = pd.read_csv(config.data.interim)
-    data = data.iloc[:50]
+    data = pd.read_csv(config.data.path.interim)
+    # data = data.iloc[:50]
 
     # schema describes the structure of the data
     # good article with examples:

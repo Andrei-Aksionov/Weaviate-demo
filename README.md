@@ -1,3 +1,7 @@
+<!-- TODO: Tasks pending completion -@andreiaksionov at 3/28/2022, 2:56:47 PM -->
+<!-- finish readme file -->
+
+
 # Weaviate-demo
 
 

@@ -1,14 +1,10 @@
 from collections import defaultdict
 from typing import Dict
 
-import pandas as pd
-from tqdm import tqdm
 from weaviate import Client
 from weaviate.util import generate_uuid5
 
-from src import config
-from src.models.weaviate.schema import schema
-from src.utils.helper_utils import split_string
+from src.utils.helper_utils import ravel
 
 
 class WeaviateDateLoader:
@@ -23,7 +19,10 @@ class WeaviateDateLoader:
         )
 
         self.schema = self.__parse_schema()
-        self.created_classes = defaultdict(set)
+        # to prevent from sending the same object multiple times will store ids
+        # Weaviate will not create duplicates but the problem is that sending
+        # the same object multiple times will slow down the procedure
+        self.created_classes_id = defaultdict(set)
 
     def __enter__(self) -> "WeaviateDateLoader":
         return self
@@ -36,9 +35,10 @@ class WeaviateDateLoader:
         return False
 
     def __parse_schema(self) -> dict:
+        # TODO: put docstring
 
         schema = self.client.schema.get()
-        parsed_schema = {}
+        parsed_schema = defaultdict(lambda: defaultdict(list))
 
         # expected references like hasAuthors, hasArticles
         expected_references = {f"has{c['class'].title()}s" for c in schema["classes"]}
@@ -46,53 +46,51 @@ class WeaviateDateLoader:
         for _class in schema["classes"]:
             class_name = _class["class"]
 
-            properties = []
             for _property in _class["properties"]:
-                _property_name = _property["name"]
-                if _property_name in expected_references:
-                    # if it's a reference like hasAuthors, then also add
-                    # info about dataType (e.g. Author)
-                    properties.append(
+                if _property["name"] in expected_references:
+                    parsed_schema[class_name]["referenced_to"].append(
                         {
-                            "name": _property_name,
-                            "dataType": _property["dataType"][0],
+                            "name": _property["name"],
+                            "dataType": ravel(_property["dataType"]),
                         }
                     )
                 else:
-                    properties.append(_property_name)
-
-            parsed_schema[class_name] = properties
+                    property_name = _property["name"]
+                    # by convention data has keys as [class_name]_[property_name]
+                    # e.g. article_title
+                    data_accessor = f"{class_name.lower()}_{property_name}"
+                    parsed_schema[class_name]["properties"].append(
+                        {
+                            "name": property_name,
+                            "data_accessor": data_accessor,
+                        }
+                    )
 
         return parsed_schema
 
     def load(self, data: dict) -> None:
+        # TODO: docstring
 
-        class_id = {}
-        object_relations = []
+        created_objects_id = {}
 
-        for class_name, properties in self.schema.items():
+        for class_name in self.schema:
+
+            properties = self.schema[class_name]["properties"]
 
             # what will be send to weaviate
-            weaviate_object = {}
-
-            for _property in properties:
-
-                if isinstance(_property, str):
-                    # keys in data object are encoded as
-                    # [class_name]_[property_name]
-                    # example: article_title
-                    data_property_name = f"{class_name.lower()}_{_property}"
-                    weaviate_object[_property] = data[data_property_name]
-                else:
-                    from_class = class_name
-                    to_class = _property["dataType"]
-                    object_relations.append((from_class, to_class))
+            # key of that dictionary has to be identical to class property name
+            # without any class_name prefix
+            weaviate_object = {p["name"]: data[p["data_accessor"]] for p in properties}
 
             id = generate_uuid5((class_name, weaviate_object))
-            class_id[class_name] = id
+            created_objects_id[class_name] = id
 
-            if id not in self.created_classes[class_name]:
-                self.created_classes[class_name] = id
+            # if such an object was already added - skip
+            # e.g. multiple article might have the same author
+            # that means that we don't need to send the same author
+            # multiple times to weaviate
+            if id not in self.created_classes_id[class_name]:
+                self.created_classes_id[class_name].add(id)
 
                 self.client.batch.add_data_object(
                     uuid=id,
@@ -100,72 +98,27 @@ class WeaviateDateLoader:
                     class_name=class_name,
                 )
 
-        self.__add_references(object_relations, class_id)
+        # adds linkage between referenced objects
+        # e.g. Article should reference on Author and Author should reference
+        # to all written Articles
+        self.__add_reference(created_objects_id)
 
-    def __add_references(self, object_relations: list[tuple[str, str]], class_uuid: dict) -> None:
+    def __add_reference(self, created_objects_id: Dict[str, str]) -> None:
+        # TODO: small docstring
 
-        for from_class, to_class in object_relations:
+        for from_what_class in self.schema:
 
-            self.client.batch.add_reference(
-                from_object_uuid=class_uuid[from_class],
-                from_object_class_name=from_class,
-                from_property_name=f"has{to_class.title()}s",
-                to_object_uuid=class_uuid[to_class],
-            )
+            from_what_object_id = created_objects_id[from_what_class]
 
+            for reference in self.schema[from_what_class]["referenced_to"]:
 
-def main() -> None:
-    client = Client(f"{config.weaviate.host}:{config.weaviate.port}")
-    client.schema.delete_all()
-    client.schema.create(schema)
+                linked_by_what_property = reference["name"]
+                to_what_class = reference["dataType"]
+                to_what_object_id = created_objects_id[to_what_class]
 
-    data = pd.read_csv(config.data.interim)
-    data = data[:10]
-    # data = data[6:8]
-
-    # ---------------------
-    # TODO: put it in config
-    names_map = {
-        "title": "article_title",
-        "url": "article_url",
-        "published_at": "article_published_at",
-        "short_description": "article_short_description",
-        "description": "article_description",
-        "keywords": "article_keywords",
-        "descriptionWordCount": "article_descriptionWordCount",
-        "author": "author_name",
-    }
-
-    data = data.rename(columns=names_map)
-
-    with WeaviateDateLoader(client) as loader:
-
-        for _, row in tqdm(data.iterrows(), total=len(data), ascii=True):
-
-            # some articles have multiple authors
-            # in order to create `Author` weaviate object for each author
-            # we need to unfold articles
-            # for example:
-            #                                                |--------------------------|
-            # --------------------------------------         | "article_1" | "author_1" |
-            # | "article_1" | "author_1, author_2" |   -->   ----------------------------
-            # --------------------------------------         | "article_1" | "author_2" |
-            #                                                ----------------------------
-            # Weaviate data loader will not sent
-            # the same object to weaviate more than once
-
-            row["author_name"] = split_string(row["author_name"])
-            row = row.to_frame().T.explode("author_name")
-
-            for _, inner_row in row.iterrows():
-                inner_row = dict(inner_row)
-
-                inner_row["article_keywords"] = split_string(inner_row["article_keywords"])
-                inner_row["article_descriptionWordCount"] = inner_row["article_description"].count(" ") + 1
-
-                loader.load(inner_row)
-
-
-if __name__ == "__main__":
-
-    main()
+                self.client.batch.add_reference(
+                    from_object_uuid=from_what_object_id,
+                    from_object_class_name=from_what_class,
+                    from_property_name=linked_by_what_property,
+                    to_object_uuid=to_what_object_id,
+                )
