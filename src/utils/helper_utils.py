@@ -1,37 +1,55 @@
-from typing import Any, Iterable
-
-from weaviate import Client
+from typing import Any, Sequence
 
 
-def split_string(text: str, delimeter: str = ",") -> list[str]:
-    return [w.strip() for w in text.split(delimeter)]
+def split_string(text: str, delimeter: str = ",", strip: bool = True) -> list[str]:
+    """Splits string with specified delimeter.
 
-
-def ravel(data: Iterable) -> Any:
-    """Returns the first element (data should contain only one element)
-
-    TODO: finish docstring
     Parameters
     ----------
-    data : Iterable
-        _description_
+    text : str
+        string containing text
+    delimeter : str, optional
+        by this delimeter string will be splitter into tokens, by default ","
+    strip : bool, optional
+        if True empty spaces in the begginning and the end of each token will be striped, by default True
+
+    Returns
+    -------
+    list[str]
+        list with tokens of splitted string
+    """
+    tokens = text.split(delimeter)
+    if not strip:
+        return tokens
+    return [t.strip() for t in tokens]
+
+
+def ravel(data: Sequence) -> Any:
+    """Returns the first element of sequence object with only one element.
+
+    Besides convenience this function lets you to be sure that in provided sequence object
+    there are only one element. So no more guessing when you see someting like:
+    ```python
+        data[0]
+    ```
+    whether there are multiple elements and code's author decided to take for some reason only
+    the first element, or there are only one element at all.
+
+    Parameters
+    ----------
+    data : Sequence
+        sequence object with only one element
 
     Returns
     -------
     Any
-        _description_
+        the first element of sequence object
 
     Raises
     ------
     ValueError
-        _description_
+        if sequence object contains more than one element
     """
-    if len(data) != 1:
-        raise ValueError(f"Expected iterable with len of 1, actually got with len of {len(data)}")
+    if (data_len := len(data)) != 1:
+        raise ValueError(f"Expected sequence with len of 1, actually got with len of {data_len}")
     return data[0]
-
-
-def add_schema(client: Client, schema: dict, delete_all: bool = True) -> None:
-    if delete_all:
-        client.schema.delete_all()
-    client.schema.create(schema)

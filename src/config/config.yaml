@@ -2,7 +2,6 @@ data:
   path:
     raw: data/raw/cnbc_news_dataset.csv
     interim: data/interim/cnbc_news_dataset_preprocessed.csv
-    schema: src/models/weaviate/schema.json
 
   # config for data loader
   loader:
@@ -21,8 +20,12 @@ data:
       author: author_name
 
 weaviate:
-  host: http://localhost
-  port: 8080
+  instance:
+    host: http://localhost
+    port: 8080
+
+  schema:
+    path: src/models/schema.json
 
 eda:
   topic_modeling:

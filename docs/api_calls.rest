@@ -5,16 +5,13 @@
 # Return schema (description of how objects are)
 GET {{host}}:{{port}}/v1/schema
 
-
-###
-# Return first 25 objects
-GET {{host}}:{{port}}/v1/objects
-
-
 ###
 # Return meta information: hostname, module info and version
 GET {{host}}:{{port}}/v1/meta
 
+###
+# Return first 25 objects
+GET {{host}}:{{port}}/v1/objects
 
 ###
 # Example request (more examples are in notebooks/3.weaviate_search_examples.ipynb)
@@ -28,16 +25,94 @@ x-request-type: GraphQL
         where: {
             valueInt: 2,
             operator: GreaterThanEqual,
-            path: ["wroteArticles"]
+            path: ["hasArticles"]
             }
         )
         {
             name
-            wroteArticles {
+            hasArticles {
                 ... on Article {
                     title
                 }
             }
         }
     }
+}
+
+###
+# Example request (more examples are in notebooks/3.weaviate_search_examples.ipynb)
+# This request does:
+# - vector search
+# - filtering by:
+#     - publish date
+#     - keywords
+#     - title
+#     - author
+#     - description word count
+POST {{host}}:{{port}}/v1/graphql HTTP/1.1
+Content-Type: application/json
+x-request-type: GraphQL
+
+{
+  Get {
+    Article(
+      limit: 5
+      nearText:
+      {
+        concepts: ["debt of european banks"],
+        moveTo:
+        {
+          concepts: ["deflation"],
+          force: 0.9
+        }
+      }
+      where:
+      {
+        operator: And,
+        operands:
+        [
+          {
+            operator: GreaterThan,
+            path: ["published_at"],
+            valueDate: "2015-01-01T0:00:00.52Z",
+          },
+          {
+            operator: Equal,
+            path: ["keywords"],
+            valueText: "bonds",
+          },
+          {
+            operator: Equal,
+            path: ["title"],
+            valueText: "Europe Japan",
+          },
+          {
+            operator: Equal,
+            path: ["hasAuthors", "Author", "name"],
+            valueString: "Tom DiChristopher",
+          },
+          {
+            operator: GreaterThan,
+            path: ["descriptionWordCount"],
+            valueInt: 100,
+          }
+        ]
+      }
+    )
+    {
+      title
+      description
+      keywords
+      published_at
+      descriptionWordCount
+      hasAuthors {
+        ... on Author {
+          name
+        }
+      }
+      _additional {
+        certainty
+      }
+    }
+  }
 }

@@ -1,9 +1,5 @@
 # WEAVIATE DATA LOADING
 
-## TODO: finalize this readme
-
-***
-
 Data loading is described in:
 
 - How to load data from [official documentation](https://weaviate.io/developers/weaviate/current/tutorials/how-to-import-data.html)
@@ -29,6 +25,7 @@ It prepares dictionary with keys identical to names of properties of class Artic
     ```python
     def add_article(batch: weaviate.client.Batch, data: dict) -> str:
         article_object = {
+            "property_name": "value",
             ...
         }
         id = batch.add_data_object(
@@ -45,6 +42,7 @@ It prepares dictionary with keys identical to names of properties of class Artic
     ```python
     def add_author(batch: weaviate.client.Batch, data: dict) -> str:
         author_object = {
+            "property_name": "value",
             ...
         }
         id = batch.add_data_object(
@@ -54,7 +52,7 @@ It prepares dictionary with keys identical to names of properties of class Artic
         return id
     ```
 
-3. Function thats adds reference to batch. As in case of this project each article references to it's author and each author references to written articles cross-references have to be created:
+3. Function thats adds reference to batch. As in case of this project each article references to it's author and each author references to written articles , so cross-references have to be created:
 
     ```python
     def add_reference(batch: weaviate.client.Batch, article_id: str, author_id: str) -> None:
@@ -83,16 +81,32 @@ It prepares dictionary with keys identical to names of properties of class Artic
         add_reference(batch, article_id, author_id)
     ```
 
-That's basically it. The only this is missing is to choose what approach of batch creating is to chose (manual or automatic). Links with description of batch creation are listed at the top of this file.
+That's basically it. The only this is missing is to choose what approach of batch creation is to choose from (manual or automatic). Links with description of batch creation options are listed at the top of this file.
 
-**Quick note**: some authors are mentioned in multiple articles, so there is no need to create new object of class Author if it is already in Weaviate instance. Duplicated authors will be dropped automatically but by adding to batch such authors will slow down loading process. So it might be a good idea to generate manually uuid for each author object and check in local `set` variable if it is already exists. If so do not add this object to batch and just return this uuid which later will be used for adding reference.
+***
+
+**Quick note**: some authors are mentioned in multiple articles (reused between them), so there is no need to create new object of class Author if it is already in Weaviate instance. Duplicated authors will be dropped automatically by Weaviate, but by adding to batch such authors it will slow down the loading process. So it might be a good idea to generate manually uuid for each author object and check in local `set` variable if it is already exist. If it's so do not add this object to batch and just return this uuid which later will be used for adding reference.
+
+For example something like this:
+
+```python
+created_authors = set()
+
+for data_object in data:
+    article_id = add_author(batch, data_object)
+    author_id = generate_uuid(("Author", data_object["author_name"], ...))
+    if author_id not in created_authors:
+        created_authors.add(author_id)
+        author_id = add_author(batch, data_object)
+    add_reference(batch, article_id, author_id)
+```
 
 ## WeaviateDataLoader
 
-Manual approach is easy to understand but the problem with it is that with each change in schema file all these three functions has to be changed. And if classes are more with different references it might be tedious to create function for all classes. That's why in file "data_loader.py" you can find "WeaviateDataLoader" class that parses schema file and automatically adds data_objects and references for each class.
+Manual approach is easy to understand but the problem with it is that with each change in schema file all these three functions has to be changed. And if there are even more classes with different references then it might be tedious to create functions for all classes. That's why in file "data_loader.py" you can find "WeaviateDataLoader" class that parses schema file and according to it automatically adds data_objects and references for each class.
 
-WeaviateDataLoader's `.load()` method expects such dictionary with data:
+WeaviateDataLoader's `.load()` method expects a dictionary with keys in special format:
 
-- keys has to be in form: [class_name]_[property_name], e.g. article_title. It is required because different class might have the same property name.
+- keys has to be in form: [class_name]_[property_name], e.g. article_title, article_url, author_name and so on. It is required because different classes might have the same property name.
 
 Example of how to load data is shown in `main.py` file. Use it as a reference.

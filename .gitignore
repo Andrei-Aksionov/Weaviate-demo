@@ -135,6 +135,9 @@ dmypy.json
 # Models
 /models
 
-# VSCODE
+# VSCode
 .vscode
 .DS_STORE
+
+# Pycharm
+.idea

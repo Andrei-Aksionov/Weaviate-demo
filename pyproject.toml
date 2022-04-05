@@ -26,6 +26,7 @@ flake8-annotations = "*"
 flake8-bugbear = "*"
 flake8-commas = "*"
 flake8-comprehensions = "*"
+flake8-docstrings = "~1.6.0"
 flake8-eradicate = "*"
 flake8-expression-complexity = "*"
 flake8-isort = "*"
@@ -39,7 +40,6 @@ scikit-learn = "~1.0.2"
 seaborn = "~0.11.2"
 termcolor = "~1.1.0"
 torch = "1.10.2"
-flake8-docstrings = "^1.6.0"
 
 [tool.isort]
 ensure_newline_before_comments = true

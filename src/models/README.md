@@ -2,21 +2,23 @@
 
 > "A schema is used to define the concepts of the data you will be adding to Weaviate."
 
-## TODO: finalize this readme file
-
-Basically in schema we can specify what classes are used, what properties each class has and optionally we can specify relations between different classes.
+Basically in schema we can specify what classes are used, what properties each class has and optionally we can specify relations between classes.
 
 Examples of how to add schema:
 
 - [Official documentation](https://weaviate.io/developers/weaviate/current/tutorials/how-to-create-a-schema.html)
 - [Article](https://hackernoon.com/what-is-weaviate-and-how-to-create-data-schemas-in-it-7hy3460) with example of classes with multiple references
 
+***
+
 ## CLASSES
 
-For example in this project [CNBC dataset](https://data.world/crawlfeeds/cnbc-news-dataset) is used that we can split into two classes:
+In this project [CNBC dataset](https://data.world/crawlfeeds/cnbc-news-dataset) is used and it has two classes:
 
 - Article
 - Author
+
+***
 
 ## PROPERTIES
 
@@ -32,7 +34,13 @@ Each class has it's own set of properties:
 - Author has:
   - name
 
+***
+
+## REFERENCES
+
 These two classes are related to each other. Articles has property "hasAuthors" which stores link to it's author, and Authors has property "hasArticles" - link to written articles.
+
+***
 
 ## DATA TYPES
 
@@ -41,9 +49,11 @@ Each property has it's own data type. List of types is described [here](https://
 - hasAuthors data type is Author
 - hasArticles data type is Article
 
+***
+
 ## VECTORIZATION
 
-With [text2vec-transformers](https://weaviate.io/developers/weaviate/current/retriever-vectorizer-modules/text2vec-transformers.html) module Weaviate for each class  concatenates **all text** properties, sends it to vectorization module and use this vector during vector search.
+With [text2vec-transformers](https://weaviate.io/developers/weaviate/current/retriever-vectorizer-modules/text2vec-transformers.html) module Weaviate for each class  concatenates **all text** properties, sends it to vectorization module and uses this vector during vector search.
 
 That's why if you want to exclude any properties from vectorization process you can provide skip parameter:
 

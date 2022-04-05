@@ -1,6 +1,4 @@
 """
-# TODO: finalize
-
 This script does two things:
 1. Populates weaviate instance with data
 2. Runs search query against indexed and vectorized data
@@ -13,22 +11,34 @@ from tqdm import tqdm
 from weaviate import Client
 
 from src import config
-from src.data.data_loader import WeaviateDateLoader
-from src.utils.helper_utils import add_schema, split_string
-from src.utils.weaviate_utils import pprint_response, print_article_stats
+from src.data import WeaviateDateLoader
+from src.utils import (
+    add_schema,
+    pprint_response,
+    print_weaviate_class_stats,
+    split_string,
+)
 
 
 def load_data(client: Client, data: pd.DataFrame) -> None:
+    """Loads data into Weaviate instance.
 
+    Parameters
+    ----------
+    client : Client
+        connection to Weaviate instance
+    data : pd.DataFrame
+        data that will be loaded into Weaviate instance
+    """
     with WeaviateDateLoader(client) as loader:
 
         for _, row in tqdm(data.iterrows(), total=len(data), ascii=True):
 
             # some articles have multiple authors
-            # in order to create `Author` weaviate object for each author
+            # in order to create `Author` object for each author
             # we need to unfold articles
             # for example:
-            #                                                |--------------------------|
+            #                                                ----------------------------
             # --------------------------------------         | "article_1" | "author_1" |
             # | "article_1" | "author_1, author_2" |   -->   ----------------------------
             # --------------------------------------         | "article_1" | "author_2" |
@@ -49,15 +59,25 @@ def load_data(client: Client, data: pd.DataFrame) -> None:
 
 
 def search(client: Client) -> dict:
+    """Search example.
 
-    # --- construct query request --- #
+    Parameters
+    ----------
+    client : Client
+        connection to Weaviate instance
+
+    Returns
+    -------
+    dict
+        dictionary with response
+    """
+    # ----------- CONSTRUCT QUERY REQUEST ----------- #
     # concepts for vector search
     nearText = {
         "concepts": ["banks hedge fonds predictions"],
         "certainty": 0.5,
     }
-
-    # against what class run query
+    # against what class to run query
     class_name = "Article"
     # what fields to return
     properties = [
@@ -73,8 +93,8 @@ def search(client: Client) -> dict:
         "valueText": ["bonds"],
     }
 
-    # --- running query --- #
-    response = (
+    # ---------------- RUN QUERY ---------------- #
+    response = (  # noqa: says that expression is too complex
         client.query.get(class_name=class_name, properties=properties)
         .with_near_text(content=nearText)
         .with_where(content=where_filter)
@@ -86,28 +106,33 @@ def search(client: Client) -> dict:
 
 
 def main() -> None:
-    client = Client(f"{config.weaviate.host}:{config.weaviate.port}")
+    """Main function.
 
-    with open(config.data.path.schema) as fin:
+    Creates connection to Weaviate instance, creates schema inside it, loads data,
+    outputs information with number of objects per each class
+    and runs example search query as a sanity check.
+    """
+    # --------- CREATE CONNECTION ---------  #
+    client = Client(f"{config.weaviate.instance.host}:{config.weaviate.instance.port}")
+
+    # ----------- CREATE SCHEMA -----------  #
+    with open(config.weaviate.schema.path) as fin:
         schema = json.load(fin)
     add_schema(client, schema)
 
-    # --------- LOAD DATA ---------  #
+    # ------------- LOAD DATA -------------  #
     data = pd.read_csv(config.data.path.interim)
-    # NOTE: Needs discussion or investigation -@andreiaksionov at 3/31/2022, 3:25:58 PM
-    # only for debug purpose
-    data = data[:50]
-
-    # as different classes might have the same name in order to access data correctly
+    # as different classes might have the same name, in order to access data correctly
     # we need to rename columns to a format that is expected by data loader:
     # [class_name]_[property_name] -> article_title, author_name, ..
     data = data.rename(columns=config.data.loader.names_map)
-
     load_data(client, data)
-    # show number of objects per each class
-    print_article_stats(client)
 
-    # --------- SEARCH ---------  #
+    # --------- PRINT CLASS STATS ----------  #
+    # show number of objects per each class
+    print_weaviate_class_stats(client)
+
+    # ------------- DO SEARCH --------------  #
     response = search(client)
     pprint_response(response)
 
