@@ -127,3 +127,17 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Dataset
+/data/*
+!/data/raw/
+
+# Models
+/models
+
+# VSCode
+.vscode
+.DS_STORE
+
+# Pycharm
+.idea

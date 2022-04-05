@@ -1,0 +1,41 @@
+data:
+  path:
+    raw: data/raw/cnbc_news_dataset.csv
+    interim: data/interim/cnbc_news_dataset_preprocessed.csv
+
+  # config for data loader
+  loader:
+    # as different classes might have the same name in order to access data correctly
+    # we need to rename columns to a format that is expected by data loader:
+    # [class_name]_[property_name] -> article_title, author_name, ..
+    names_map:
+      # Article class
+      title: article_title
+      url: article_url
+      published_at: article_published_at
+      short_description: article_short_description
+      description: article_description
+      keywords: article_keywords
+      # Author class
+      author: author_name
+
+weaviate:
+  instance:
+    host: http://localhost
+    port: 8080
+
+  schema:
+    path: src/models/schema.json
+
+eda:
+  topic_modeling:
+    umap:
+      random_state: 42
+    bertopic:
+      embedding_model: "all-MiniLM-L6-v2"
+
+preprocessing:
+  author:
+    fillna_value: Unknown
+  spacy:
+    model: en_core_web_sm
