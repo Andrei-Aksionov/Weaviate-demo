@@ -1,6 +1,3 @@
-<!-- TODO: Tasks pending completion -@andreiaksionov at 3/28/2022, 2:56:47 PM -->
-<!-- finish readme file -->
-
 <h1 align="center">Welcome to Weaviate Demo</h1>
 
 <p align=center><img src="references/readme/images/weaviate_logo.webp"></p>
