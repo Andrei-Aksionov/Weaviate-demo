@@ -1,4 +1,5 @@
-"""
+"""Main script.
+
 This script does two things:
 1. Populates weaviate instance with data
 2. Runs search query against indexed and vectorized data

@@ -19,7 +19,7 @@ weaviate-client = "~3.3.0"
 
 [tool.poetry.dev-dependencies]
 bertopic = "~0.9.4"
-black = "*"
+black = {version = "*", extras = ["jupyter"]}
 flake8 = "*"
 flake8-absolute-import = "*"
 flake8-annotations = "*"
@@ -51,6 +51,7 @@ use_parentheses = true
 
 [tool.black]
 line_length = 120
+target-version = ["py39"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
